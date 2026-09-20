@@ -1,0 +1,247 @@
+{
+  "datasets": [
+    {
+      "name": "76b104c5",
+      "displayName": "marts_posts_users",
+      "config": {
+        "version": "1.1",
+        "source": "workspace.default.marts_posts_users",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "name": "count",
+            "expr": "COUNT(*)",
+            "comment": "Represents the total number of rows in the dataset. Use this measure to count all",
+            "displayName": "Count"
+          }
+        ]
+      }
+    },
+    {
+      "name": "88cc7258",
+      "displayName": "marts_top_tags",
+      "config": {
+        "version": "1.1",
+        "source": "select * from workspace.default.marts_top_tags limit 10",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "name": "count",
+            "expr": "COUNT(*)",
+            "comment": "Represents the total number of rows in the dataset. Use this measure to count all",
+            "displayName": "Count"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ab9a74e6",
+      "displayName": "Untitled dataset",
+      "config": {
+        "version": "1.1",
+        "source": "select avg(score) as average_answer_score, Reputation, Id as UserId from default.marts_posts_users\r\nwhere PostType = 'Answer'\r\ngroup by Id, Reputation\r\n",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "name": "count",
+            "expr": "COUNT(*)",
+            "comment": "Represents the total number of rows in the dataset. Use this measure to count all",
+            "displayName": "Count"
+          }
+        ]
+      }
+    }
+  ],
+  "pages": [
+    {
+      "name": "c37937e0",
+      "displayName": "posts_users",
+      "layout": [
+        {
+          "widget": {
+            "name": "ee79b852",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "76b104c5",
+                  "fields": [
+                    {
+                      "name": "monthly(PostCreationDate)",
+                      "expression": "DATE_TRUNC(\"MONTH\", `PostCreationDate`)"
+                    },
+                    {
+                      "name": "count(PostId)",
+                      "expression": "COUNT(`PostId`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "monthly(PostCreationDate)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "count(PostId)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "06fe2a15",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "88cc7258",
+                  "fields": [
+                    {
+                      "name": "tag_exploded",
+                      "expression": "`tag_exploded`"
+                    },
+                    {
+                      "name": "sum(tags_count)",
+                      "expression": "SUM(`tags_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "tag_exploded",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(tags_count)",
+                  "axis": {
+                    "hideLabels": false
+                  },
+                  "scale": {
+                    "type": "quantitative",
+                    "reverse": false,
+                    "domain": {
+                      "type": "custom",
+                      "max": 4000
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "218c1792",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ab9a74e6",
+                  "fields": [
+                    {
+                      "name": "Reputation",
+                      "expression": "`Reputation`"
+                    },
+                    {
+                      "name": "average_answer_score",
+                      "expression": "`average_answer_score`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "Reputation",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "average_answer_score",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 11,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
