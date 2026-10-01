@@ -1,0 +1,51 @@
+# Create or replace a kind cluster
+kind delete cluster --name kind
+kind create cluster --image kindest/node:v1.29.4
+
+# Add airflow to my Helm repo
+helm repo add apache-airflow https://airflow.apache.org
+helm repo update
+helm show values apache-airflow/airflow > chart/values-example.yaml
+
+# Export values for Airflow docker image
+export IMAGE_NAME=my-dags
+# export IMAGE_TAG=$(date +%Y%m%d%H%M%S)
+export IMAGE_TAG=0.0.1
+export NAMESPACE=airflow
+export RELEASE_NAME=airflow
+
+
+# Build the image and load into Kind
+docker build --pull --tag $IMAGE_NAME:$IMAGE_TAG -f cicd/Dockerfile .
+kind load docker-image $IMAGE_NAME:$IMAGE_TAG
+
+# Create a namespace
+kubectl create namespace $NAMESPACE
+
+# Apply kubernetes secrets
+kubectl apply -f k8s/secrets/git-secrets.yaml
+
+# Install Airflow using Helm
+helm install $RELEASE_NAME apache-airflow/airflow \
+    --namespace $NAMESPACE -f chart/values-override.yaml \
+    --set-string images.airflow.tag="$IMAGE_TAG" \
+    --debug
+
+helm upgrade --install airflow apache-airflow/airflow \
+  --namespace airflow \
+  --create-namespace \
+  -f chart/values-override.yaml \
+  --server-side=false \
+  --timeout 20m
+
+helm upgrade --install "$RELEASE_NAME" apache-airflow/airflow \
+  --namespace "$NAMESPACE" \
+  --create-namespace \
+  -f chart/values-override.yaml \
+  --set-string "images.airflow.repository=$IMAGE_NAME" \
+  --set-string "images.airflow.tag=$IMAGE_TAG" \
+  --server-side=false \
+  --timeout 20m \
+  --debug
+# Port forward the api server
+kubectl port-forward svc/$RELEASE_NAME-api-server 8080:8080 --namespace $NAMESPACE

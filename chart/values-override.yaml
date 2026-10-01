@@ -1,0 +1,59 @@
+airflowVersion: "3.0.2"
+
+images:
+  airflow:
+    repository: my-dags
+    tag: "0.0.1"
+    digest: null
+    pullPolicy: IfNotPresent
+
+apiServer:
+  startupProbe:
+    failureThreshold: 30
+    periodSeconds: 10
+    timeoutSeconds: 20
+
+scheduler:
+  startupProbe:
+    failureThreshold: 30
+    periodSeconds: 10
+    timeoutSeconds: 20
+
+# For lighter deployment
+# executor: LocalExecutor
+
+executor: "KubernetesExecutor"
+
+redis:
+  enabled: false
+
+statsd:
+  enabled: false
+
+triggerer:
+  enabled: false
+
+dags:
+  gitSync:
+    enabled: true # true will create a sidecar app to pulls repo to local directory
+
+    # Git repo clone url
+    repo: https://github.com/haoj1711-netizen/databricks-airflow-k8s.git
+    # SSH example: git@github.com:apache/airflow.git
+    # HTTPS example: https://github.com/apache/airflow.git
+
+    branch: main
+    rev: HEAD
+
+    # The git revision (branch, tag, or hash) to check out, v4 only
+    ref: main
+
+    depth: 1
+
+    # The number of consecutive failures allowed before aborting
+    maxFailures: 0
+
+    # Subpath within the repo where dags are located.
+    # Should be "" if dags are at repo root
+    subPath: "dags"
+    credentialsSecret: git-credentials
