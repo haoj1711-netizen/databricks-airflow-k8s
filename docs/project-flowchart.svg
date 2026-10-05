@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1540" viewBox="0 0 2200 1540" role="img" aria-labelledby="title desc">
+  <title id="title">Databricks, Airflow, Kubernetes project flowchart</title>
+  <desc id="desc">Detailed architecture and data flow from GitHub and Internet Archive through Airflow, Amazon S3, Databricks medallion tables, and a Lakeview dashboard.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset="1" stop-color="#eef2ff"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity=".12"/></filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/></marker>
+    <marker id="arrowGap" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#9333ea"/></marker>
+    <style>
+      .section{fill:#ffffff;stroke:#cbd5e1;stroke-width:2;rx:24;filter:url(#shadow)}
+      .section-title{font:700 24px 'Segoe UI',Arial,sans-serif;fill:#334155;letter-spacing:.5px}
+      .node{stroke-width:2;rx:16;filter:url(#shadow)}
+      .delivery{fill:#fff7ed;stroke:#f97316}.airflow{fill:#eff6ff;stroke:#2563eb}.aws{fill:#fefce8;stroke:#ca8a04}.dbx{fill:#fff1f2;stroke:#e11d48}.table{fill:#f0fdf4;stroke:#16a34a}.gap{fill:#faf5ff;stroke:#9333ea;stroke-dasharray:8 6}
+      .h{font:700 18px 'Segoe UI',Arial,sans-serif;fill:#0f172a}.t{font:15px 'Segoe UI',Arial,sans-serif;fill:#334155}.small{font:13px 'Segoe UI',Arial,sans-serif;fill:#475569}.label{font:600 13px 'Segoe UI',Arial,sans-serif;fill:#475569}
+      .arrow{fill:none;stroke:#475569;stroke-width:3;marker-end:url(#arrow)}.dash{fill:none;stroke:#9333ea;stroke-width:3;stroke-dasharray:9 7;marker-end:url(#arrowGap)}
+    </style>
+  </defs>
+  <rect width="2200" height="1540" fill="url(#bg)"/>
+  <text x="70" y="66" style="font:800 36px 'Segoe UI',Arial,sans-serif;fill:#0f172a">Databricks + Airflow on Kubernetes — Project Flow</text>
+  <text x="70" y="101" style="font:17px 'Segoe UI',Arial,sans-serif;fill:#64748b">Repository-derived architecture • solid = implemented • dashed purple = external configuration or missing bridge</text>
+
+  <rect class="section" x="50" y="135" width="2100" height="245"/>
+  <text class="section-title" x="80" y="175">1 · Code delivery and local orchestration platform</text>
+  <rect class="node delivery" x="95" y="215" width="245" height="105"/><text class="h" x="217" y="251" text-anchor="middle">GitHub repository</text><text class="t" x="217" y="279" text-anchor="middle">main branch</text><text class="small" x="217" y="301" text-anchor="middle">DAGs, image, notebooks</text>
+  <rect class="node delivery" x="440" y="205" width="275" height="125"/><text class="h" x="577" y="243" text-anchor="middle">GitHub Actions</text><text class="t" x="577" y="271" text-anchor="middle">Build Airflow 3.0.2 image</text><text class="small" x="577" y="295" text-anchor="middle">Push timestamp tag on main</text>
+  <rect class="node aws" x="815" y="215" width="245" height="105"/><text class="h" x="937" y="251" text-anchor="middle">AWS ECR</text><text class="t" x="937" y="279" text-anchor="middle">my-dags-repo</text><text class="small" x="937" y="301" text-anchor="middle">ap-southeast-5</text>
+  <rect class="node airflow" x="1190" y="195" width="370" height="145"/><text class="h" x="1375" y="233" text-anchor="middle">kind Kubernetes cluster</text><text class="t" x="1375" y="262" text-anchor="middle">Apache Airflow Helm chart</text><text class="t" x="1375" y="287" text-anchor="middle">KubernetesExecutor</text><text class="small" x="1375" y="314" text-anchor="middle">custom image loaded or pulled from ECR</text>
+  <rect class="node airflow" x="1695" y="210" width="330" height="115"/><text class="h" x="1860" y="247" text-anchor="middle">git-sync sidecars</text><text class="t" x="1860" y="275" text-anchor="middle">Pull dags/ from main</text><text class="small" x="1860" y="299" text-anchor="middle">git-credentials secret configured</text>
+  <path class="arrow" d="M340 267 H440"/><text class="label" x="390" y="250" text-anchor="middle">push</text>
+  <path class="arrow" d="M715 267 H815"/><text class="label" x="765" y="250" text-anchor="middle">docker push</text>
+  <path class="arrow" d="M1060 267 H1190"/><text class="label" x="1125" y="250" text-anchor="middle">pull / load</text>
+  <path class="arrow" d="M340 300 C800 370 1450 370 1695 290"/><text class="label" x="1090" y="360" text-anchor="middle">periodic Git clone</text>
+  <path class="arrow" d="M1695 250 H1560"/>
+
+  <rect class="section" x="50" y="415" width="2100" height="355"/>
+  <text class="section-title" x="80" y="455">2 · Daily Airflow data acquisition and event-driven handoff</text>
+  <rect class="node delivery" x="85" y="520" width="270" height="120"/><text class="h" x="220" y="558" text-anchor="middle">Internet Archive</text><text class="t" x="220" y="586" text-anchor="middle">Stack Exchange dump</text><text class="small" x="220" y="612" text-anchor="middle">ai.meta.stackexchange.com.7z</text>
+  <rect class="node airflow" x="445" y="485" width="300" height="185"/><text class="h" x="595" y="525" text-anchor="middle">produce_data_assets</text><text class="t" x="595" y="554" text-anchor="middle">@daily multi-asset task</text><text class="small" x="595" y="585" text-anchor="middle">1. requests.get → /tmp</text><text class="small" x="595" y="610" text-anchor="middle">2. py7zr extract</text><text class="small" x="595" y="635" text-anchor="middle">3. S3Hook via aws_conn</text>
+  <rect class="node aws" x="845" y="500" width="300" height="155"/><text class="h" x="995" y="540" text-anchor="middle">Amazon S3</text><text class="t" x="995" y="571" text-anchor="middle">test-bucket-haoj</text><text class="small" x="995" y="600" text-anchor="middle">raw/Posts.xml</text><text class="small" x="995" y="625" text-anchor="middle">raw/Users.xml (overwrite)</text>
+  <rect class="node airflow" x="1240" y="485" width="315" height="185"/><text class="h" x="1397" y="525" text-anchor="middle">Airflow asset condition</text><text class="t" x="1397" y="557" text-anchor="middle">Posts.xml AND Users.xml</text><text class="small" x="1397" y="588" text-anchor="middle">both outlets update only after</text><text class="small" x="1397" y="611" text-anchor="middle">the producer task succeeds</text><text class="small" x="1397" y="640" text-anchor="middle">triggers downstream DAG</text>
+  <rect class="node airflow" x="1670" y="480" width="400" height="195"/><text class="h" x="1870" y="521" text-anchor="middle">DatabricksRunNowOperator</text><text class="t" x="1870" y="552" text-anchor="middle">trigger_databricks_workflow_dag</text><text class="small" x="1870" y="584" text-anchor="middle">Connection: databricks_conn</text><text class="small" x="1870" y="609" text-anchor="middle">Job: 1000953499239098</text><text class="small" x="1870" y="638" text-anchor="middle">Calls Databricks Jobs API</text>
+  <path class="arrow" d="M355 580 H445"/><text class="label" x="400" y="563" text-anchor="middle">HTTPS</text>
+  <path class="arrow" d="M745 580 H845"/><text class="label" x="795" y="563" text-anchor="middle">upload</text>
+  <path class="arrow" d="M1145 575 H1240"/><text class="label" x="1192" y="558" text-anchor="middle">emit</text>
+  <path class="arrow" d="M1555 575 H1670"/><text class="label" x="1612" y="558" text-anchor="middle">schedule</text>
+  <path class="arrow" d="M1375 340 V485"/><text class="label" x="1390" y="416">worker pod</text>
+
+  <rect class="section" x="50" y="805" width="2100" height="650"/>
+  <text class="section-title" x="80" y="845">3 · Databricks lakehouse pipeline and analytics</text>
+  <rect class="node gap" x="90" y="885" width="360" height="135"/><text class="h" x="270" y="924" text-anchor="middle">Databricks Job (external)</text><text class="t" x="270" y="954" text-anchor="middle">Notebook task graph is not in repo</text><text class="small" x="270" y="982" text-anchor="middle">must define dependencies + compute</text>
+  <rect class="node gap" x="90" y="1080" width="360" height="145"/><text class="h" x="270" y="1119" text-anchor="middle">Unity Catalog volume</text><text class="t" x="270" y="1149" text-anchor="middle">workspace.default.my_volume</text><text class="small" x="270" y="1178" text-anchor="middle">REQUIRED bridge from S3 raw/</text><text class="small" x="270" y="1202" text-anchor="middle">external volume or copy/sync</text>
+  <path class="dash" d="M995 655 V705 H500 V1148 H450"/><text class="label" x="735" y="694" text-anchor="middle" fill="#9333ea">not implemented: S3 → volume visibility</text>
+  <path class="arrow" d="M1870 675 V740 H270 V885"/><text class="label" x="890" y="759" text-anchor="middle">run-now</text>
+
+  <rect class="node dbx" x="555" y="880" width="305" height="145"/><text class="h" x="707" y="920" text-anchor="middle">Bronze posts</text><text class="t" x="707" y="949" text-anchor="middle">Read Posts.xml</text><text class="small" x="707" y="976" text-anchor="middle">explicit schema + rename columns</text><text class="small" x="707" y="1000" text-anchor="middle">overwrite raw_posts</text>
+  <rect class="node dbx" x="555" y="1090" width="305" height="145"/><text class="h" x="707" y="1130" text-anchor="middle">Bronze users</text><text class="t" x="707" y="1159" text-anchor="middle">Read Users.xml</text><text class="small" x="707" y="1186" text-anchor="middle">explicit schema + rename columns</text><text class="small" x="707" y="1210" text-anchor="middle">overwrite raw_users</text>
+  <path class="dash" d="M450 943 H555"/><path class="dash" d="M450 943 C500 943 500 1162 555 1162"/>
+  <path class="arrow" d="M450 1148 H555"/>
+
+  <rect class="node table" x="945" y="875" width="245" height="95"/><text class="h" x="1067" y="914" text-anchor="middle">raw_posts</text><text class="small" x="1067" y="941" text-anchor="middle">default schema</text>
+  <rect class="node table" x="945" y="1120" width="245" height="95"/><text class="h" x="1067" y="1159" text-anchor="middle">raw_users</text><text class="small" x="1067" y="1186" text-anchor="middle">default schema</text>
+  <path class="arrow" d="M860 950 H945"/><path class="arrow" d="M860 1162 H945"/>
+
+  <rect class="node dbx" x="1265" y="855" width="335" height="145"/><text class="h" x="1432" y="895" text-anchor="middle">DQX checks</text><text class="small" x="1432" y="925" text-anchor="middle">Id + CreationDate non-null</text><text class="small" x="1432" y="950" text-anchor="middle">date not future; type allow-list</text><text class="small" x="1432" y="975" text-anchor="middle">results currently not persisted</text>
+  <rect class="node dbx" x="1265" y="1035" width="335" height="175"/><text class="h" x="1432" y="1075" text-anchor="middle">Silver posts</text><text class="small" x="1432" y="1105" text-anchor="middle">split Tags → TagsArray</text><text class="small" x="1432" y="1130" text-anchor="middle">Id → PostId; map PostType</text><text class="small" x="1432" y="1155" text-anchor="middle">Delta incremental merge</text><text class="small" x="1432" y="1182" text-anchor="middle">then final cell forces full refresh</text>
+  <path class="arrow" d="M1190 915 H1265"/><path class="arrow" d="M1190 940 C1230 940 1225 1120 1265 1120"/>
+  <rect class="node table" x="1690" y="1058" width="265" height="100"/><text class="h" x="1822" y="1098" text-anchor="middle">stg_posts</text><text class="small" x="1822" y="1126" text-anchor="middle">Delta table</text><path class="arrow" d="M1600 1120 H1690"/>
+
+  <rect class="node dbx" x="1060" y="1290" width="335" height="120"/><text class="h" x="1227" y="1330" text-anchor="middle">Gold: popular tags</text><text class="small" x="1227" y="1358" text-anchor="middle">explode + approx distinct posts</text><text class="small" x="1227" y="1382" text-anchor="middle">→ marts_top_tags</text>
+  <rect class="node dbx" x="1510" y="1280" width="355" height="140"/><text class="h" x="1687" y="1320" text-anchor="middle">Gold: posts + users</text><text class="small" x="1687" y="1349" text-anchor="middle">left join OwnerUserId = users.Id</text><text class="small" x="1687" y="1376" text-anchor="middle">→ marts_posts_users</text><text class="small" x="1687" y="1400" text-anchor="middle">wide analytical table</text>
+  <path class="arrow" d="M1822 1158 C1822 1235 1227 1225 1227 1290"/><path class="arrow" d="M1822 1158 V1245 H1687 V1280"/><path class="arrow" d="M1067 1215 C1067 1260 1687 1235 1687 1280"/>
+  <rect class="node delivery" x="1930" y="1265" width="190" height="170"/><text class="h" x="2025" y="1308" text-anchor="middle">Lakeview</text><text class="h" x="2025" y="1332" text-anchor="middle">dashboard</text><text class="small" x="2025" y="1365" text-anchor="middle">top tags</text><text class="small" x="2025" y="1388" text-anchor="middle">post/user data</text><text class="small" x="2025" y="1411" text-anchor="middle">score vs reputation</text>
+  <path class="arrow" d="M1395 1350 H1930"/><path class="arrow" d="M1865 1350 H1930"/>
+
+  <rect x="1660" y="855" width="430" height="145" rx="16" fill="#f8fafc" stroke="#94a3b8" stroke-width="2"/><text class="h" x="1690" y="890">Key runtime configuration</text><text class="small" x="1690" y="920">aws_conn • databricks_conn</text><text class="small" x="1690" y="944">ECR/GitHub secrets • UC volume</text><text class="small" x="1690" y="968">Job graph • IAM/UC permissions</text><text class="small" x="1690" y="992">network egress • optional log PV</text>
+</svg>

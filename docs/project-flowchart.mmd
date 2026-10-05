@@ -1,0 +1,58 @@
+flowchart TB
+  classDef external fill:#fff7ed,stroke:#f97316,color:#431407
+  classDef airflow fill:#eff6ff,stroke:#2563eb,color:#172554
+  classDef aws fill:#fefce8,stroke:#ca8a04,color:#422006
+  classDef dbx fill:#fff1f2,stroke:#e11d48,color:#4c0519
+  classDef table fill:#f0fdf4,stroke:#16a34a,color:#052e16
+  classDef gap fill:#faf5ff,stroke:#9333ea,color:#3b0764,stroke-dasharray: 7 5
+
+  subgraph delivery[Code delivery and local platform]
+    repo[GitHub repository\nmain branch]:::external
+    gha[GitHub Actions\nBuild custom Airflow 3.0.2 image]:::external
+    ecr[AWS ECR\nmy-dags-repo]:::aws
+    kind[kind Kubernetes cluster\nApache Airflow Helm chart\nKubernetesExecutor]:::airflow
+    gitSync[git-sync sidecars\nPull dags/ from main]:::airflow
+    repo -->|push| gha -->|docker push| ecr -->|pull/load| kind
+    repo -->|periodic clone| gitSync --> kind
+  end
+
+  subgraph orchestration[Airflow orchestration]
+    schedule[@daily asset schedule]:::airflow
+    download[Download\nai.meta.stackexchange.com.7z]:::airflow
+    extract[Extract in worker /tmp\nPosts.xml + Users.xml]:::airflow
+    upload[Upload with aws_conn\nreplace existing objects]:::airflow
+    assets[Emit two Airflow assets only after success\nPosts.xml AND Users.xml]:::airflow
+    trigger[trigger_databricks_workflow_dag\nDatabricksRunNowOperator\ndatabricks_conn / job 1000953499239098]:::airflow
+    schedule --> download --> extract --> upload --> assets --> trigger
+  end
+
+  archive[Internet Archive\nStack Exchange data dump]:::external --> download
+  upload --> s3[(S3 bucket test-bucket-haoj\nraw/Posts.xml\nraw/Users.xml)]:::aws
+
+  job[Databricks Job\nTask graph is configured outside this repo]:::gap
+  trigger -->|Jobs API run-now| job
+  s3 -.->|REQUIRED: external UC volume or copy/sync| volume[(Unity Catalog volume\n/Volumes/workspace/default/my_volume)]:::gap
+  job -.->|must order notebook tasks| bronzePosts
+  job -.-> bronzeUsers
+
+  subgraph lakehouse[Databricks lakehouse transformation]
+    volume --> bronzePosts[bronze_posts.ipynb\nXML + explicit schema\nstrip leading underscores]:::dbx
+    volume --> bronzeUsers[bronze_users.ipynb\nXML + explicit schema\nstrip leading underscores]:::dbx
+    bronzePosts --> rawPosts[(default.raw_posts)]:::table
+    bronzeUsers --> rawUsers[(default.raw_users)]:::table
+    rawPosts --> dqx[bronze_posts_dqx.ipynb\nnot-null / future date / type checks\nvalid + quarantined are not persisted]:::dbx
+    rawPosts --> silver[silver_posts.ipynb\nsplit tags / rename Id / map post type\nDelta merge then forced full refresh]:::dbx
+    silver --> stgPosts[(default.stg_posts)]:::table
+    stgPosts --> goldTags[gold_most_popular_tags.ipynb\nexplode + approximate distinct count]:::dbx
+    stgPosts --> goldUsers[gold_posts_users.ipynb\nleft join on OwnerUserId = users.Id]:::dbx
+    rawUsers --> goldUsers
+    goldTags --> martsTags[(default.marts_top_tags)]:::table
+    goldUsers --> martsUsers[(default.marts_posts_users)]:::table
+  end
+
+  martsTags --> dashboard[Databricks Lakeview dashboard\nTop tags / post-user dataset /\naverage answer score vs reputation]:::external
+  martsUsers --> dashboard
+
+  pv[(Optional hostPath PV/PVC\n5 GiB Airflow logs)]:::table --> kind
+
+  note[Solid arrows = implemented in repository\nDashed arrows = external configuration or missing bridge]:::gap
